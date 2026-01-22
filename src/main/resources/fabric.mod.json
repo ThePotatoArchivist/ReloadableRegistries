@@ -19,7 +19,7 @@
 			"archives.tater.relreg.impl.ReloadableRegistriesImpl"
 		],
 		"client": [
-			"archives.tater.relreg.impl.ReloadableRegistriesClient"
+			"archives.tater.relreg.impl.client.ReloadableRegistriesClientImpl"
 		]
 	},
 	"mixins": [

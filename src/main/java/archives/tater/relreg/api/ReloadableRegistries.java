@@ -12,6 +12,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
+@SuppressWarnings("unused")
 public final class ReloadableRegistries {
     private ReloadableRegistries() {}
 
@@ -21,6 +22,22 @@ public final class ReloadableRegistries {
 
     public static <T> void register(ResourceKey<Registry<T>> key, Codec<T> codec) {
         register(key, codec, null);
+    }
+
+    public static <T> void registerSynced(ResourceKey<Registry<T>> key, Codec<T> codec, Codec<T> syncCodec, LootDataType.@Nullable Validator<T> validator) {
+        ReloadableRegistriesImpl.registerSynced(key, codec, syncCodec, validator);
+    }
+
+    public static <T> void registerSynced(ResourceKey<Registry<T>> key, Codec<T> codec, LootDataType.@Nullable Validator<T> validator) {
+        registerSynced(key, codec, codec, validator);
+    }
+
+    public static <T> void registerSynced(ResourceKey<Registry<T>> key, Codec<T> codec, Codec<T> syncCodec) {
+        registerSynced(key, codec, syncCodec, null);
+    }
+
+    public static <T> void registerSynced(ResourceKey<Registry<T>> key, Codec<T> codec) {
+        registerSynced(key, codec, codec);
     }
 
     public static @Unmodifiable List<ResourceKey<? extends Registry<?>>> getReloadableRegistries() {

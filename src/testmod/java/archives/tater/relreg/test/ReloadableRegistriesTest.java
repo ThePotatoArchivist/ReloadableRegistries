@@ -14,6 +14,6 @@ public class ReloadableRegistriesTest implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        ReloadableRegistries.register(TEST, Codec.STRING.fieldOf("x").codec());
+        ReloadableRegistries.registerSynced(TEST, Codec.STRING.fieldOf("x").codec());
     }
 }

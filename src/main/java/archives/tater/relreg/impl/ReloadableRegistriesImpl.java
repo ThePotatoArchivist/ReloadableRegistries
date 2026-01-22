@@ -1,7 +1,12 @@
 package archives.tater.relreg.impl;
 
+import archives.tater.relreg.mixin.RegistrySynchronizationAccessor;
+
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
 
 import com.mojang.serialization.Codec;
@@ -9,8 +14,12 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.configuration.ClientboundRegistryDataPacket;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.RegistryDataLoader;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.storage.loot.LootDataType;
 
@@ -23,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -33,6 +43,10 @@ import static net.minecraft.commands.Commands.literal;
 @ApiStatus.Internal
 public class ReloadableRegistriesImpl implements ModInitializer {
 	public static final String MOD_ID = "relreg";
+
+	public static Identifier id(String path) {
+		return Identifier.fromNamespaceAndPath(MOD_ID, path);
+	}
 
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.
@@ -45,6 +59,8 @@ public class ReloadableRegistriesImpl implements ModInitializer {
 	public static final List<ResourceKey<? extends Registry<?>>> CUSTOM_RELOADABLE_REGISTRIES = new ArrayList<>();
 
 	public static final List<LootDataType<?>> CUSTOM_LOOT_DATA_TYPES = new ArrayList<>();
+
+	public static final List<RegistryDataLoader.RegistryData<?>> SYNCED_RELOADABLE_REGISTRIES = new ArrayList<>();
 
 	private static final LootDataType.Validator<?> EMPTY_VALIDATOR = (validationContext, resourceKey, object) -> {};
 
@@ -59,6 +75,11 @@ public class ReloadableRegistriesImpl implements ModInitializer {
 		CUSTOM_LOOT_DATA_TYPES.add(new LootDataType<>(key, codec, requireNonNullElse(validator, emptyValidator())));
 	}
 
+	public static <T> void registerSynced(ResourceKey<Registry<T>> key, Codec<T> codec, Codec<T> syncCodec, LootDataType.@Nullable Validator<T> validator) {
+		register(key, codec, validator);
+		SYNCED_RELOADABLE_REGISTRIES.add(new RegistryDataLoader.RegistryData<>(key, syncCodec, false));
+	}
+
     public static @Unmodifiable List<ResourceKey<? extends Registry<?>>> getReloadableRegistries() {
 		return RELOADABLE_REGISTRIES;
     }
@@ -69,6 +90,15 @@ public class ReloadableRegistriesImpl implements ModInitializer {
 
 	public static Stream<LootDataType<?>> streamLootDataTypes() {
 		return CUSTOM_LOOT_DATA_TYPES.stream();
+	}
+
+	public static SyncReloadableRegistryPayload getSyncPayload(RegistryAccess registries) {
+		var syncEntries = new ArrayList<ClientboundRegistryDataPacket>();
+		for (var registry : SYNCED_RELOADABLE_REGISTRIES)
+			RegistrySynchronizationAccessor.invokePackRegistry(registries.createSerializationContext(NbtOps.INSTANCE), registry, registries, Set.of(), (key, entries) -> {
+				syncEntries.add(new ClientboundRegistryDataPacket(key, entries));
+			});
+		return new SyncReloadableRegistryPayload(syncEntries);
 	}
 
 	public static int executeListRegistry(HolderLookup.Provider registryAccess, Identifier registryId, Consumer<Component> responder) {
@@ -99,6 +129,15 @@ public class ReloadableRegistriesImpl implements ModInitializer {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
+
+		PayloadTypeRegistry.playS2C().registerLarge(SyncReloadableRegistryPayload.TYPE, SyncReloadableRegistryPayload.CODEC, 128 * 1024 * 1024);
+
+		ServerPlayerEvents.JOIN.register(serverPlayer ->
+				ServerPlayNetworking.send(serverPlayer, getSyncPayload(
+						(RegistryAccess) serverPlayer.level().getServer().reloadableRegistries().lookup()
+				))
+		);
+
 		if (FabricLoader.getInstance().isDevelopmentEnvironment())
 			registerCommands();
 	}
