@@ -11,10 +11,10 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.commands.arguments.IdentifierArgument;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 
 import org.slf4j.Logger;
@@ -29,8 +29,8 @@ public class RelReg implements ModInitializer {
 
     public static final String MOD_ID = "relreg";
 
-    public static Identifier id(String path) {
-        return Identifier.fromNamespaceAndPath(MOD_ID, path);
+    public static ResourceLocation id(String path) {
+        return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
     }
 
     // This logger is used to write text to the console and the log file.
@@ -38,11 +38,11 @@ public class RelReg implements ModInitializer {
     // That way, it's clear which mod wrote info, warnings, and errors.
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-    public static int executeListRegistry(HolderLookup.Provider registryAccess, Identifier registryId, Consumer<Component> responder) {
+    public static int executeListRegistry(HolderLookup.Provider registryAccess, ResourceLocation registryId, Consumer<Component> responder) {
         var entries = registryAccess.lookupOrThrow(ResourceKey.createRegistryKey(registryId)).listElements().toList();
         responder.accept(Component.literal("Registry " + registryId + " has " + entries.size() + " registries:"));
         for (var entry : entries) {
-            responder.accept(Component.literal(entry.key().identifier().toString()).withStyle(ChatFormatting.YELLOW)
+            responder.accept(Component.literal(entry.key().location().toString()).withStyle(ChatFormatting.YELLOW)
                     .append(Component.literal(": ").withStyle(ChatFormatting.WHITE))
                     .append(Component.literal(entry.value().toString()).withStyle(ChatFormatting.GRAY)));
         }
@@ -52,9 +52,9 @@ public class RelReg implements ModInitializer {
     private static void registerCommands() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(literal("relreg_server")
-                    .then(argument("registry", IdentifierArgument.id()).executes(command -> executeListRegistry(
+                    .then(argument("registry", ResourceLocationArgument.id()).executes(command -> executeListRegistry(
                             command.getSource().getServer().relreg_reloadableRegistries(),
-                            IdentifierArgument.getId(command, "registry"),
+                            ResourceLocationArgument.getId(command, "registry"),
                             text -> command.getSource().sendSuccess(() -> text, false)
                     )))
             );
@@ -67,11 +67,11 @@ public class RelReg implements ModInitializer {
         // However, some things (like resources) may still be uninitialized.
         // Proceed with mild caution.
 
-        PayloadTypeRegistry.playS2C().registerLarge(SyncReloadableRegistriesPayload.TYPE, SyncReloadableRegistriesPayload.CODEC, 128 * 1024 * 1024);
+        PayloadTypeRegistry.playS2C().register(SyncReloadableRegistriesPayload.TYPE, SyncReloadableRegistriesPayload.CODEC);
 
         ServerPlayerEvents.JOIN.register(serverPlayer ->
                 ServerPlayNetworking.send(serverPlayer, ReloadableRegistrySync.getSyncPayload(
-                        serverPlayer.level().getServer().relreg_reloadableRegistries()
+                        serverPlayer.serverLevel().getServer().relreg_reloadableRegistries()
                 ))
         );
 

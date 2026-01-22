@@ -16,6 +16,6 @@ public abstract class MinecraftServerMixin implements HasReloadableRegistries {
 
     @Override
     public RegistryAccess relreg_reloadableRegistries() {
-        return (RegistryAccess) reloadableRegistries().lookup();
+        return reloadableRegistries().get();
     }
 }
