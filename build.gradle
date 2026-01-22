@@ -36,6 +36,8 @@ sourceSets {
 }
 
 loom {
+	accessWidenerPath = file("src/main/resources/relreg.classtweaker")
+
 	runs {
 		var testmod = sourceSets["testmod"]
 

@@ -1,6 +1,5 @@
 package archives.tater.relreg.impl.client;
 
-import archives.tater.relreg.api.client.HasClientReloadableRegistries;
 import archives.tater.relreg.impl.ReloadableRegistriesImpl;
 import archives.tater.relreg.impl.SyncReloadableRegistryPayload;
 
@@ -50,7 +49,7 @@ public class ReloadableRegistriesClientImpl implements ClientModInitializer {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
                 dispatcher.register(literal("relreg_client")
                         .then(argument("registry", CIdentifierArgument.id()).executes(command -> ReloadableRegistriesImpl.executeListRegistry(
-                                requireNonNull((HasClientReloadableRegistries) command.getSource().getClient().getConnection()).relreg_reloadableRegistries(),
+                                requireNonNull(command.getSource().getClient().getConnection()).relreg_reloadableRegistries(),
                                 CIdentifierArgument.getId(command, "registry"),
                                 command.getSource()::sendFeedback
                         )))

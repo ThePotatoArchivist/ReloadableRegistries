@@ -18,6 +18,6 @@ public class ClientLevelMixin implements HasClientReloadableRegistries {
 
     @Override
     public RegistryAccess relreg_reloadableRegistries() {
-        return ((HasClientReloadableRegistries) connection).relreg_reloadableRegistries();
+        return connection.relreg_reloadableRegistries();
     }
 }
