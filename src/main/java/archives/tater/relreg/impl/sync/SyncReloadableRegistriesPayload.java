@@ -1,4 +1,6 @@
-package archives.tater.relreg.impl;
+package archives.tater.relreg.impl.sync;
+
+import archives.tater.relreg.impl.RelReg;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -8,8 +10,8 @@ import net.minecraft.network.protocol.configuration.ClientboundRegistryDataPacke
 
 import java.util.List;
 
-public record SyncReloadableRegistryPayload(
-        List<ClientboundRegistryDataPacket> entries
+public record SyncReloadableRegistriesPayload(
+        List<ClientboundRegistryDataPacket> registries
 ) implements CustomPacketPayload {
 
     @Override
@@ -17,10 +19,10 @@ public record SyncReloadableRegistryPayload(
         return TYPE;
     }
 
-    public static final Type<SyncReloadableRegistryPayload> TYPE = new Type<>(ReloadableRegistriesImpl.id("sync_reloadable_registries"));
-    public static final StreamCodec<FriendlyByteBuf, SyncReloadableRegistryPayload> CODEC =
+    public static final Type<SyncReloadableRegistriesPayload> TYPE = new Type<>(RelReg.id("sync_reloadable_registries"));
+    public static final StreamCodec<FriendlyByteBuf, SyncReloadableRegistriesPayload> CODEC =
             ClientboundRegistryDataPacket.STREAM_CODEC.apply(ByteBufCodecs.list()).map(
-                    SyncReloadableRegistryPayload::new,
-                    SyncReloadableRegistryPayload::entries
+                    SyncReloadableRegistriesPayload::new,
+                    SyncReloadableRegistriesPayload::registries
             );
 }

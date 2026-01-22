@@ -1,7 +1,7 @@
 package archives.tater.relreg.mixin;
 
-import archives.tater.relreg.impl.ReloadableRegistriesImpl;
-import archives.tater.relreg.impl.SyncReloadableRegistryPayload;
+import archives.tater.relreg.impl.sync.SyncReloadableRegistriesPayload;
+import archives.tater.relreg.impl.sync.ReloadableRegistrySync;
 
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -31,15 +31,15 @@ public class PlayerListMixin {
             method = "reloadResources",
             at = @At("HEAD")
     )
-    private void createPayload(CallbackInfo ci, @Share("payload")LocalRef<SyncReloadableRegistryPayload> payload) {
-        payload.set(ReloadableRegistriesImpl.getSyncPayload((RegistryAccess) server.reloadableRegistries().lookup()));
+    private void createPayload(CallbackInfo ci, @Share("payload")LocalRef<SyncReloadableRegistriesPayload> payload) {
+        payload.set(ReloadableRegistrySync.getSyncPayload((RegistryAccess) server.reloadableRegistries().lookup()));
     }
 
     @WrapOperation(
             method = "reloadResources",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;send(Lnet/minecraft/network/protocol/Packet;)V")
     )
-    private void sendPayload(ServerGamePacketListenerImpl instance, Packet<?> packet, Operation<Void> original, @Share("payload")LocalRef<SyncReloadableRegistryPayload> payload) {
+    private void sendPayload(ServerGamePacketListenerImpl instance, Packet<?> packet, Operation<Void> original, @Share("payload")LocalRef<SyncReloadableRegistriesPayload> payload) {
         original.call(instance, packet);
         ServerPlayNetworking.send(instance.player, payload.get());
     }

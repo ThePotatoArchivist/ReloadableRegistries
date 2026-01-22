@@ -16,10 +16,10 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"archives.tater.relreg.impl.ReloadableRegistriesImpl"
+			"archives.tater.relreg.impl.RelReg"
 		],
 		"client": [
-			"archives.tater.relreg.impl.client.ReloadableRegistriesClientImpl"
+			"archives.tater.relreg.impl.client.RelRegClient"
 		]
 	},
 	"mixins": [

@@ -1,7 +1,6 @@
 package archives.tater.relreg.impl.client;
 
 import net.minecraft.core.LayeredRegistryAccess;
-import net.minecraft.core.RegistryAccess;
 
 import java.util.List;
 

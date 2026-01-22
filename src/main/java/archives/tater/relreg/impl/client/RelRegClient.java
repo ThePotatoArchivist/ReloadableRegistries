@@ -1,7 +1,8 @@
 package archives.tater.relreg.impl.client;
 
-import archives.tater.relreg.impl.ReloadableRegistriesImpl;
-import archives.tater.relreg.impl.SyncReloadableRegistryPayload;
+import archives.tater.relreg.impl.RelReg;
+import archives.tater.relreg.impl.sync.SyncReloadableRegistriesPayload;
+import archives.tater.relreg.impl.sync.ReloadableRegistrySync;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -25,19 +26,19 @@ import static java.util.Objects.requireNonNull;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
-public class ReloadableRegistriesClientImpl implements ClientModInitializer {
+public class RelRegClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        ClientPlayNetworking.registerGlobalReceiver(SyncReloadableRegistryPayload.TYPE, (payload, context) -> {
+        ClientPlayNetworking.registerGlobalReceiver(SyncReloadableRegistriesPayload.TYPE, (payload, context) -> {
             Map<ResourceKey<? extends Registry<?>>, RegistryDataLoader.NetworkedRegistryData> registryMap =
-                    payload.entries().stream().collect(Collectors.toMap(
+                    payload.registries().stream().collect(Collectors.toMap(
                             ClientboundRegistryDataPacket::registry,
                             packet -> new RegistryDataLoader.NetworkedRegistryData(packet.entries(), TagNetworkSerialization.NetworkPayload.EMPTY)
                     ));
 
             ((MutableReloadableRegistries) context.player().connection).relreg_setReloadableRegistries(
-                    RegistryDataLoader.load(registryMap, ResourceProvider.EMPTY, List.of(), ReloadableRegistriesImpl.SYNCED_RELOADABLE_REGISTRIES)
+                    RegistryDataLoader.load(registryMap, ResourceProvider.EMPTY, List.of(), ReloadableRegistrySync.SYNCED_RELOADABLE_REGISTRIES)
             );
         });
 
@@ -48,7 +49,7 @@ public class ReloadableRegistriesClientImpl implements ClientModInitializer {
     private static void registerCommands() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
                 dispatcher.register(literal("relreg_client")
-                        .then(argument("registry", CIdentifierArgument.id()).executes(command -> ReloadableRegistriesImpl.executeListRegistry(
+                        .then(argument("registry", CIdentifierArgument.id()).executes(command -> RelReg.executeListRegistry(
                                 requireNonNull(command.getSource().getClient().getConnection()).relreg_reloadableRegistries(),
                                 CIdentifierArgument.getId(command, "registry"),
                                 command.getSource()::sendFeedback
